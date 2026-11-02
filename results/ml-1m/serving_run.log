@@ -1,0 +1,12 @@
+[22:01:51] Refit SASRec {'dim': 100} for 60 epochs on train+valid
+[22:05:55] Export and quantize
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+[22:05:56] Quality on test (same users, full ranking)
+[22:06:01]    PyTorch fp32       NDCG@10=0.1089
+[22:06:06]    ONNX Runtime fp32  NDCG@10=0.1089
+[22:06:11]    ONNX Runtime int8  NDCG@10=0.1092
+[22:06:14] Latency: 1000 single-user requests, 4 CPU threads
+[22:06:15]    PyTorch fp32       p50=1.48ms p99=2.09ms
+[22:06:16]    ONNX Runtime fp32  p50=0.90ms p99=1.32ms
+[22:06:17]    ONNX Runtime int8  p50=0.77ms p99=1.16ms
+[22:06:17] Done in 269s

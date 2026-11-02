@@ -13,8 +13,14 @@ MIN_COUNT = 5
 
 
 def load_positives(ratings_path: str | Path, threshold: float = POSITIVE_THRESHOLD) -> pd.DataFrame:
-    """Keep only ratings >= threshold as positive (implicit) interactions."""
-    df = pd.read_csv(ratings_path)
+    """Keep only ratings >= threshold as positive (implicit) interactions.
+
+    Reads ml-latest-small's ratings.csv or ml-1m's ratings.dat ("user::movie::rating::timestamp").
+    """
+    if str(ratings_path).endswith(".dat"):
+        df = pd.read_csv(ratings_path, sep="::", engine="python", names=["userId", "movieId", "rating", "timestamp"])
+    else:
+        df = pd.read_csv(ratings_path)
     df = df[df["rating"] >= threshold]
     return df[["userId", "movieId", "timestamp"]].reset_index(drop=True)
 
@@ -108,5 +114,7 @@ def leave_one_out(df: pd.DataFrame) -> Split:
 
 def load_split(raw_dir: str | Path) -> tuple[Split, pd.DataFrame]:
     """Full pipeline: positives -> iterative filter -> leave-one-out. Returns (split, filtered dataframe)."""
-    df = iterative_filter(load_positives(Path(raw_dir) / "ratings.csv"))
+    raw_dir = Path(raw_dir)
+    ratings = raw_dir / "ratings.csv" if (raw_dir / "ratings.csv").exists() else raw_dir / "ratings.dat"
+    df = iterative_filter(load_positives(ratings))
     return leave_one_out(df), df

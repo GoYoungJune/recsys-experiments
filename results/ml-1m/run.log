@@ -1,0 +1,68 @@
+[21:37:12] Data: {'n_users': 6034, 'n_items': 3125, 'n_positives': 574376, 'n_train': 562308, 'density': 0.030460775604905534}
+[21:37:12] 1) Grid search (validation NDCG@10)
+[21:37:12]   Popularity {} valid NDCG@10=0.0219 {} (0.2s)
+[21:37:13]   ItemKNN    {'neighbors': 10, 'shrink': 0} valid NDCG@10=0.0436 {} (1.3s)
+[21:37:15]   ItemKNN    {'neighbors': 10, 'shrink': 10} valid NDCG@10=0.0427 {} (1.3s)
+[21:37:16]   ItemKNN    {'neighbors': 10, 'shrink': 50} valid NDCG@10=0.0432 {} (1.3s)
+[21:37:17]   ItemKNN    {'neighbors': 20, 'shrink': 0} valid NDCG@10=0.0437 {} (1.4s)
+[21:37:19]   ItemKNN    {'neighbors': 20, 'shrink': 10} valid NDCG@10=0.0433 {} (1.4s)
+[21:37:20]   ItemKNN    {'neighbors': 20, 'shrink': 50} valid NDCG@10=0.0434 {} (1.4s)
+[21:37:22]   ItemKNN    {'neighbors': 50, 'shrink': 0} valid NDCG@10=0.0410 {} (1.4s)
+[21:37:23]   ItemKNN    {'neighbors': 50, 'shrink': 10} valid NDCG@10=0.0413 {} (1.4s)
+[21:37:24]   ItemKNN    {'neighbors': 50, 'shrink': 50} valid NDCG@10=0.0402 {} (1.4s)
+[21:37:26]   ItemKNN    {'neighbors': 100, 'shrink': 0} valid NDCG@10=0.0398 {} (1.5s)
+[21:37:27]   ItemKNN    {'neighbors': 100, 'shrink': 10} valid NDCG@10=0.0401 {} (1.4s)
+[21:37:28]   ItemKNN    {'neighbors': 100, 'shrink': 50} valid NDCG@10=0.0398 {} (1.3s)
+[21:37:30]   ItemKNN    {'neighbors': 200, 'shrink': 0} valid NDCG@10=0.0396 {} (1.4s)
+[21:37:31]   ItemKNN    {'neighbors': 200, 'shrink': 10} valid NDCG@10=0.0391 {} (1.3s)
+[21:37:33]   ItemKNN    {'neighbors': 200, 'shrink': 50} valid NDCG@10=0.0382 {} (1.3s)
+[21:37:34]   ItemKNN    {'neighbors': 400, 'shrink': 0} valid NDCG@10=0.0383 {} (1.3s)
+[21:37:35]   ItemKNN    {'neighbors': 400, 'shrink': 10} valid NDCG@10=0.0379 {} (1.3s)
+[21:37:36]   ItemKNN    {'neighbors': 400, 'shrink': 50} valid NDCG@10=0.0366 {} (1.3s)
+[21:37:38]   EASE       {'l2': 5} valid NDCG@10=0.0430 {} (1.6s)
+[21:37:40]   EASE       {'l2': 10} valid NDCG@10=0.0451 {} (1.6s)
+[21:37:41]   EASE       {'l2': 20} valid NDCG@10=0.0473 {} (1.6s)
+[21:37:43]   EASE       {'l2': 50} valid NDCG@10=0.0489 {} (1.6s)
+[21:37:44]   EASE       {'l2': 100} valid NDCG@10=0.0507 {} (1.6s)
+[21:37:46]   EASE       {'l2': 250} valid NDCG@10=0.0517 {} (1.6s)
+[21:37:48]   EASE       {'l2': 500} valid NDCG@10=0.0513 {} (1.5s)
+[21:37:49]   EASE       {'l2': 1000} valid NDCG@10=0.0495 {} (1.6s)
+[21:37:51]   EASE       {'l2': 2000} valid NDCG@10=0.0485 {} (1.5s)
+[21:51:17]   SASRec     {'dim': 50} valid NDCG@10=0.1152 {'best_epoch': 155} (806.1s)
+[21:56:38]   SASRec     {'dim': 100} valid NDCG@10=0.1181 {'best_epoch': 60} (321.0s)
+[21:56:38]    best on validation: SASRec
+[21:56:38] 2) Refit on train+valid, evaluate on test
+[21:56:38]   Popularity test Recall@10=0.0388 NDCG@10=0.0190 Recall@20=0.0681 NDCG@20=0.0263 Coverage@10=0.0371
+[21:56:40]   ItemKNN    test Recall@10=0.0762 NDCG@10=0.0391 Recall@20=0.1281 NDCG@20=0.0521 Coverage@10=0.3821
+[21:56:42]   EASE       test Recall@10=0.1014 NDCG@10=0.0494 Recall@20=0.1627 NDCG@20=0.0648 Coverage@10=0.2995
+[22:00:44]   SASRec     test Recall@10=0.2108 NDCG@10=0.1093 Recall@20=0.3164 NDCG@20=0.1359 Coverage@10=0.6826
+[22:00:44] 3) Paired bootstrap: SASRec vs others (per-user NDCG@10, 10,000 resamples)
+[22:00:45]    SASRec - Popularity: diff=+0.0903 CI=[+0.0839, +0.0965] p=<0.001
+[22:00:45]    SASRec - ItemKNN: diff=+0.0702 CI=[+0.0637, +0.0764] p=<0.001
+[22:00:45]    SASRec - EASE: diff=+0.0598 CI=[+0.0536, +0.0661] p=<0.001
+[22:00:46]    ItemKNN - Popularity: diff=+0.0201 CI=[+0.0161, +0.0244] p=<0.001
+[22:00:46]    EASE - Popularity: diff=+0.0304 CI=[+0.0261, +0.0346] p=<0.001
+[22:00:46] 4) Segment analysis
+[22:00:48] 5) H5: time decay (tau tuned on validation)
+[22:00:49]   ItemKNN+decay tau=0.5 days valid NDCG@10=0.0513
+[22:00:51]   ItemKNN+decay tau=1 days valid NDCG@10=0.0505
+[22:00:52]   ItemKNN+decay tau=7 days valid NDCG@10=0.0487
+[22:00:53]   ItemKNN+decay tau=30 days valid NDCG@10=0.0478
+[22:00:55]   ItemKNN+decay tau=90 days valid NDCG@10=0.0463
+[22:00:56]   ItemKNN+decay tau=365 days valid NDCG@10=0.0450
+[22:00:57]   ItemKNN+decay tau=inf days valid NDCG@10=0.0437
+[22:00:59]   EASE+decay tau=0.5 days valid NDCG@10=0.0597
+[22:01:01]   EASE+decay tau=1 days valid NDCG@10=0.0587
+[22:01:02]   EASE+decay tau=7 days valid NDCG@10=0.0573
+[22:01:04]   EASE+decay tau=30 days valid NDCG@10=0.0568
+[22:01:05]   EASE+decay tau=90 days valid NDCG@10=0.0554
+[22:01:07]   EASE+decay tau=365 days valid NDCG@10=0.0542
+[22:01:08]   EASE+decay tau=inf days valid NDCG@10=0.0517
+[22:01:12]   ItemKNN+decay (tau=0.5) test NDCG@10=0.0481 vs base +0.0090 p=<0.001 | Q4 +0.0184 [+0.0099, +0.0269] p=<0.001
+[22:01:17]   EASE+decay (tau=0.5) test NDCG@10=0.0593 vs base +0.0099 p=<0.001 | Q4 +0.0145 [+0.0063, +0.0230] p=<0.001
+[22:01:17]    H7: SASRec vs time-decayed item-item models
+[22:01:18]    SASRec - ItemKNN+decay: +0.0611 [+0.0549, +0.0674] p=<0.001
+[22:01:19]    SASRec - EASE+decay: +0.0499 [+0.0438, +0.0561] p=<0.001
+[22:01:19] 6) Qualitative example (EASE)
+[22:01:19] 7) Writing results
+[22:01:19] Done in 1450s

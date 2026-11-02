@@ -77,3 +77,33 @@ def test_time_decay_weights_recent_history_more(split):
     w = m.Xw_.toarray()
     assert np.allclose(w.max(axis=1), 1.0)                       # latest interaction weighs 1
     assert ((w > 0) <= (split.train.toarray() > 0)).all()        # never adds unseen items
+
+
+def test_sasrec_never_recommends_seen_and_is_causal(split):
+    import torch
+    from recsys.models import SASRec
+
+    m = SASRec(split.train_times, dim=8, max_len=20, epochs=2, device="cpu").fit(split.train)
+    users = np.arange(split.n_users)
+    recs = m.recommend(users, split.train, 10)
+    assert (split.train.toarray()[users[:, None], recs] == 0).all()
+    # changing the newest item must not change the hidden states of earlier positions
+    seq = torch.from_numpy(m.seqs_[:1].copy())
+    seq2 = seq.clone()
+    seq2[0, -1] = 1 if seq[0, -1] != 1 else 2
+    with torch.no_grad():
+        a, b = m.net(seq), m.net(seq2)
+    assert torch.allclose(a[0, :-1], b[0, :-1], atol=1e-6)
+
+
+def test_sasrec_sequences_end_with_latest_item(split):
+    from recsys.models import SASRec
+
+    m = SASRec(split.train_times, max_len=5, device="cpu")
+    seqs = m._sequences(split.train)
+    t = split.train_times.tocsr()
+    for u in range(split.n_users):
+        lo, hi = t.indptr[u], t.indptr[u + 1]
+        items, ts = t.indices[lo:hi], t.data[lo:hi]
+        latest = items[np.lexsort((items, ts))][-1]
+        assert seqs[u, -1] == latest + 1        # +1: index 0 is padding

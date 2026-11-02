@@ -992,6 +992,7 @@
       }
     }
   },
+  "sasrec_vs_decay": {},
   "qualitative": {
     "user_index": 9,
     "userId": 11,
@@ -1019,5 +1020,5 @@
       "Contact (1997)"
     ]
   },
-  "runtime_sec": 108.0
+  "runtime_sec": 107.4
 }

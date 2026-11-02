@@ -1,0 +1,13 @@
+[21:43:37] Population: {'mean_Y': 4.483949612220475, 'sd_Y': 5.863429742865125, 'corr_X_Y_raw_scale': 0.590596551996085, 'mde_abs': 0.13451848836661426, 'n_per_arm_formula': 29825, 'n_per_arm_formula_cuped': 19422, 'cuped_sample_saving': 0.34880134115674766}
+[21:43:37] A1/A2) power and type I error, raw vs CUPED, at the raw-formula sample size
+[21:44:04]    null: reject raw=0.046 cuped=0.044 var ratio=0.654
+[21:44:30]    effect: reject raw=0.795 cuped=0.928 var ratio=0.654
+[21:44:44]    CUPED power at n=19422/arm: 0.789
+[21:44:44] A3) peeking: 14 daily looks, users arrive uniformly
+[21:45:40]    null: fixed=0.046 naive=0.219 OBF=0.045
+[21:46:33]    effect: fixed=0.772 naive=0.861 OBF=0.759
+[21:46:33] A4) sample ratio mismatch: treatment silently loses heavy users
+[21:47:02]    clean: lift=+0.0002 FP=0.052 SRM alarm=0.002
+[21:47:31]    bug: lift=-0.0367 FP=0.940 SRM alarm=0.203
+[21:47:31] Writing results
+[21:47:31] Done in 234s

@@ -8,3 +8,6 @@ __pycache__/
 .venv/
 build/
 dist/
+
+# exported models are rebuilt by scripts/benchmark_serving.py
+*.onnx

@@ -1,9 +1,14 @@
 """Run the full experiment: grid search -> refit on train+valid -> test -> bootstrap -> segments -> time decay -> report.
 
-Outputs go to results/: results.md, results.json, ndcg_overall.png, ndcg_by_segment.png, ndcg_decay_by_segment.png
+Outputs go to results/ (ml-latest-small) or results/ml-1m/: results.md, results.json, ndcg_overall.png,
+ndcg_by_segment.png, ndcg_decay_by_segment.png
+
+    python scripts/run_experiments.py                    # ml-latest-small
+    python scripts/run_experiments.py --dataset ml-1m    # adds SASRec (H7), drops BPR-MF
 """
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import sys
@@ -24,16 +29,24 @@ sys.path.insert(0, str(ROOT / "src"))  # allow running without `pip install -e .
 
 from recsys.data import load_split  # noqa: E402
 from recsys.evaluate import evaluate  # noqa: E402
-from recsys.models import BPRMF, EASE, ItemKNN, Popularity, TimeDecay  # noqa: E402
+from recsys.models import BPRMF, EASE, ItemKNN, Popularity, SASRec, TimeDecay  # noqa: E402
 from recsys.stats import bootstrap_ci, paired_bootstrap  # noqa: E402
 
 SEED = 42
 K = 10
 METRICS = ["Recall@10", "NDCG@10", "Recall@20", "NDCG@20", "Coverage@10"]
-RAW = ROOT / "data" / "raw"
-OUT = ROOT / "results"
-MODEL_ORDER = ["Popularity", "ItemKNN", "EASE", "BPR-MF"]
-COLORS = {"Popularity": "#999999", "ItemKNN": "#E69F00", "EASE": "#0072B2", "BPR-MF": "#009E73"}
+# BPR-MF is left out on ml-1m: H2 was already rejected and SASRec is the neural model there.
+DATASETS = {
+    "ml-latest-small": {"raw": ROOT / "data" / "raw", "out": ROOT / "results",
+                        "models": ["Popularity", "ItemKNN", "EASE", "BPR-MF"]},
+    "ml-1m": {"raw": ROOT / "data" / "ml-1m", "out": ROOT / "results" / "ml-1m",
+              "models": ["Popularity", "ItemKNN", "EASE", "SASRec"]},
+}
+# set from --dataset in main()
+RAW = DATASETS["ml-latest-small"]["raw"]
+OUT = DATASETS["ml-latest-small"]["out"]
+MODEL_ORDER = DATASETS["ml-latest-small"]["models"]
+COLORS = {"Popularity": "#999999", "ItemKNN": "#E69F00", "EASE": "#0072B2", "BPR-MF": "#009E73", "SASRec": "#CC79A7"}
 
 GRIDS = {
     "Popularity": [{}],
@@ -41,8 +54,11 @@ GRIDS = {
     "ItemKNN": [{"neighbors": n, "shrink": s} for n, s in itertools.product([10, 20, 50, 100, 200, 400], [0, 10, 50])],
     "EASE": [{"l2": v} for v in [5, 10, 20, 50, 100, 250, 500, 1000, 2000]],
     "BPR-MF": [{"dim": d, "weight_decay": w} for d, w in itertools.product([32, 64, 128], [1e-5, 1e-4, 1e-3, 1e-2])],
+    # paper defaults for ml-1m (max_len 200, 2 blocks, 1 head, dropout 0.2); only the width is searched
+    "SASRec": [{"dim": d} for d in [50, 100]],
 }
 FACTORY = {"Popularity": Popularity, "ItemKNN": ItemKNN, "EASE": EASE, "BPR-MF": BPRMF}
+ITERATIVE = {"BPR-MF", "SASRec"}  # early-stopped on validation, refit with the best epoch count
 # H5: recency weighting on the item-item models. tau = inf is the undecayed base model.
 DECAY_BASES = ["ItemKNN", "EASE"]
 TAU_DAYS = [0.5, 1, 7, 30, 90, 365, float("inf")]
@@ -57,15 +73,31 @@ def fmt_p(p: float) -> str:
 
 
 # ---------------------------------------------------------------------------------------------------
+def make(name, params, times, **extra):
+    """SASRec needs the interaction timestamps of the matrix it is fit on; the others do not."""
+    if name == "SASRec":
+        return SASRec(times, **params, **extra)
+    return FACTORY[name](**params, **extra)
+
+
+def load_titles(raw):
+    """movieId -> title for the qualitative example (ml-1m ships movies.dat in latin-1)."""
+    if (raw / "movies.csv").exists():
+        return pd.read_csv(raw / "movies.csv").set_index("movieId")["title"]
+    movies = pd.read_csv(raw / "movies.dat", sep="::", engine="python", names=["movieId", "title", "genres"],
+                         encoding="latin-1")
+    return movies.set_index("movieId")["title"]
+
+
 def grid_search(split):
     """Pick hyper-parameters by validation NDCG@10 (train -> valid)."""
     ev = lambda m: evaluate(m, split.train, split.valid_items, ks=(K,))[f"NDCG@{K}"]
     grid_rows, best = [], {}
-    for name, grid in GRIDS.items():
-        for params in grid:
+    for name in MODEL_ORDER:
+        for params in GRIDS[name]:
             t = time.time()
-            model = FACTORY[name](**params)
-            if name == "BPR-MF":
+            model = make(name, params, split.train_times)
+            if name in ITERATIVE:
                 model.fit(split.train, eval_fn=ev)
                 score, extra = model.best_score_, {"best_epoch": model.best_epoch_}
             else:
@@ -80,14 +112,14 @@ def grid_search(split):
 
 def final_test(split, best):
     """Refit each model's best config on train+valid and evaluate on test (seen = train+valid)."""
-    tv = split.train_plus_valid()
+    tv, tv_times = split.train_plus_valid(), split.train_plus_valid_times()
     results = {}
     for name in MODEL_ORDER:
         params = best[name]["params"]
-        if name == "BPR-MF":
-            model = BPRMF(**params, epochs=best[name]["best_epoch"]).fit(tv)  # fixed epochs, no peeking
+        if name in ITERATIVE:
+            model = make(name, params, tv_times, epochs=best[name]["best_epoch"]).fit(tv)  # fixed epochs, no peeking
         else:
-            model = FACTORY[name](**params).fit(tv)
+            model = make(name, params, tv_times).fit(tv)
         res = evaluate(model, tv, split.test_items, ks=(10, 20))
         res["model"] = model
         res["ndcg_ci"] = bootstrap_ci(res["per_user"]["NDCG@10"])
@@ -175,13 +207,12 @@ def segment_analysis(split, tv, test_res, best_name, df):
     return rows, hist_len, seg, target_pop_rank
 
 
-def qualitative(split, tv, test_res, hist_len, movies):
+def qualitative(split, tv, test_res, hist_len, title):
     """EASE Top-10 for the user whose history length is closest to the median."""
     med = np.median(hist_len)
     u = int(np.argmin(np.abs(hist_len - med)))  # argmin -> smallest index on ties (deterministic)
     ease = test_res["EASE"]["model"]
     recs = ease.recommend(np.array([u]), tv, K)[0]
-    title = movies.set_index("movieId")["title"]
     target = int(split.test_items[u])
     return {
         "user_index": u,
@@ -219,9 +250,11 @@ def plot_decay_segments(seg_rows, decay_res, path):
         series.append((base, [r[f"{base}_NDCG@10"] for r in seg_rows], COLORS[base], None))
         series.append((f"{base}+decay", [decay_res[base]["by_segment"][r["segment"]] for r in seg_rows],
                        COLORS[base], "//"))
+    if "SASRec" in MODEL_ORDER:
+        series.append(("SASRec", [r["SASRec_NDCG@10"] for r in seg_rows], COLORS["SASRec"], None))
     fig, ax = plt.subplots(figsize=(8, 4.6))
     x = np.arange(len(seg_rows))
-    w = 0.16
+    w = 0.8 / len(series)
     for k, (label, means, color, hatch) in enumerate(series):
         ax.bar(x + (k - (len(series) - 1) / 2) * w, means, w, color=color, hatch=hatch,
                edgecolor="white" if hatch else None, label=label)
@@ -230,7 +263,7 @@ def plot_decay_segments(seg_rows, decay_res, path):
     ax.set_xlabel("User segment by training-history length (quartiles)")
     ax.set_ylabel("Test NDCG@10")
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, fontsize=8)
+    ax.legend(ncol=len(series), loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, fontsize=8)
     ax.set_title("H5: recency weighting by segment (hatched = time-decayed)", pad=28)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
@@ -264,13 +297,18 @@ def plot_segments(seg_rows, path):
 
 # ---------------------------------------------------------------------------------------------------
 def main() -> None:
+    global RAW, OUT, MODEL_ORDER
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", choices=list(DATASETS), default="ml-latest-small")
+    cfg = DATASETS[parser.parse_args().dataset]
+    RAW, OUT, MODEL_ORDER = cfg["raw"], cfg["out"], cfg["models"]
     torch.manual_seed(SEED)
     np.random.seed(SEED)
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
 
     split, df = load_split(RAW)
-    movies = pd.read_csv(RAW / "movies.csv")
+    title = load_titles(RAW)
     data_stats = {
         "n_users": split.n_users,
         "n_items": split.n_items,
@@ -292,7 +330,10 @@ def main() -> None:
     pairs = [(best_name, n) for n in MODEL_ORDER if n != best_name]
     # extra pairs needed to judge the hypotheses: H1 (every personalized model vs Popularity), H2
     for extra in [("ItemKNN", "Popularity"), ("EASE", "Popularity"), ("BPR-MF", "Popularity"), ("BPR-MF", "ItemKNN"),
-                  ("EASE", "BPR-MF")]:  # all personalized pairs, whichever model wins validation
+                  ("EASE", "BPR-MF"), ("SASRec", "Popularity"), ("SASRec", "EASE"), ("SASRec", "ItemKNN")]:
+        # all personalized pairs present in this run, whichever model wins validation
+        if extra[0] not in MODEL_ORDER or extra[1] not in MODEL_ORDER:
+            continue
         if extra not in pairs and extra[::-1] not in pairs:
             pairs.append(extra)
     boot = []
@@ -307,10 +348,19 @@ def main() -> None:
     log("5) H5: time decay (tau tuned on validation)")
     decay_grid, decay_chosen = tune_decay(split, best)
     decay_res = decay_test(split, tv, decay_chosen, test_res, seg)
+    seq_vs_decay = {}
+    if "SASRec" in MODEL_ORDER:
+        log("   H7: SASRec vs time-decayed item-item models")
+        sas = test_res["SASRec"]["per_user"]["NDCG@10"]
+        for base in DECAY_BASES:
+            d = decay_res[base]["per_user"]["NDCG@10"]
+            seq_vs_decay[base] = {"all": paired_bootstrap(sas, d),
+                                  **{q: paired_bootstrap(sas[seg == q], d[seg == q]) for q in ["Q1", "Q2", "Q3", "Q4"]}}
+            r = seq_vs_decay[base]["all"]
+            log(f"   SASRec - {base}+decay: {r['diff']:+.4f} [{r['ci_low']:+.4f}, {r['ci_high']:+.4f}] p={fmt_p(r['p_value'])}")
 
     log("6) Qualitative example (EASE)")
-    qual = qualitative(split, tv, test_res, hist_len, movies)
-    title = movies.set_index("movieId")["title"]
+    qual = qualitative(split, tv, test_res, hist_len, title)
     # most recent 5 liked movies before the test item (by timestamp)
     u_df = df[df.userId == qual["userId"]].sort_values(["timestamp", "movieId"])
     qual["recent_history"] = [title[m] for m in u_df["movieId"].iloc[-6:-1]]
@@ -320,7 +370,7 @@ def main() -> None:
     plot_segments(seg_rows, OUT / "ndcg_by_segment.png")
     plot_decay_segments(seg_rows, decay_res, OUT / "ndcg_decay_by_segment.png")
     write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual,
-                   decay_grid, decay_chosen, decay_res)
+                   decay_grid, decay_chosen, decay_res, seq_vs_decay)
     json_out = {
         "data": data_stats,
         "grid": grid_rows,
@@ -347,6 +397,7 @@ def main() -> None:
                 for b in DECAY_BASES
             },
         },
+        "sasrec_vs_decay": {f"SASRec vs {b}+decay": v for b, v in seq_vs_decay.items()},
         "qualitative": qual,
         "runtime_sec": round(time.time() - t0, 1),
     }
@@ -355,7 +406,7 @@ def main() -> None:
 
 
 def write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual,
-                   decay_grid, decay_chosen, decay_res):
+                   decay_grid, decay_chosen, decay_res, seq_vs_decay):
     L = ["# Results", "", "Auto-generated by `scripts/run_experiments.py`. All numbers are from a single run (seed 42).", ""]
     L += ["## Data", "", tabulate([[k, f"{v:.4%}" if k == "density" else v] for k, v in data_stats.items()],
                                   headers=["stat", "value"], tablefmt="github"), ""]
@@ -412,6 +463,13 @@ def write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_r
     L += ["Paired bootstrap on per-user NDCG@10 (decayed - base, decayed - Popularity):", "",
           tabulate(rows, headers=["comparison", "users", "diff", "95% CI", "p-value", "significant (0.05)"],
                    tablefmt="github", disable_numparse=True), ""]
+    if seq_vs_decay:
+        rows = [[f"SASRec vs {b}+decay", scope, f"{r['diff']:+.4f}", f"[{r['ci_low']:+.4f}, {r['ci_high']:+.4f}]",
+                 fmt_p(r["p_value"]), "yes" if r["p_value"] < 0.05 else "no"]
+                for b, by_scope in seq_vs_decay.items() for scope, r in by_scope.items()]
+        L += ["## H7: SASRec vs time-decayed item-item models (paired bootstrap, per-user NDCG@10)", "",
+              tabulate(rows, headers=["comparison", "users", "diff", "95% CI", "p-value", "significant (0.05)"],
+                       tablefmt="github", disable_numparse=True), ""]
     rows = [[g["model"], g["tau_days"], f"{g['valid_NDCG@10']:.4f}"] for g in decay_grid]
     L += ["tau grid:", "", tabulate(rows, headers=["model", "tau (days)", "valid NDCG@10"], tablefmt="github",
                                      disable_numparse=True), ""]

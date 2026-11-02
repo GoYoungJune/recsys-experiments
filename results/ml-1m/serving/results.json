@@ -1,0 +1,68 @@
+{
+  "sasrec_config": {
+    "params": {
+      "dim": 100
+    },
+    "valid_NDCG@10": 0.11808343934995542,
+    "best_epoch": 60
+  },
+  "threads": 4,
+  "n_requests": 1000,
+  "rows": [
+    {
+      "variant": "PyTorch fp32",
+      "NDCG@10": 0.10893688153344769,
+      "size_mb": 1.8192,
+      "p50_ms": 1.479950000430108,
+      "p95_ms": 1.9654499999887773,
+      "p99_ms": 2.0874040001763206
+    },
+    {
+      "variant": "ONNX Runtime fp32",
+      "NDCG@10": 0.10893688153344769,
+      "size_mb": 3.125999,
+      "p50_ms": 0.8966000004875241,
+      "p95_ms": 1.2680050000199117,
+      "p99_ms": 1.3227959999494487
+    },
+    {
+      "variant": "ONNX Runtime int8",
+      "NDCG@10": 0.10917935590976327,
+      "size_mb": 0.863814,
+      "p50_ms": 0.7682500008741044,
+      "p95_ms": 1.043904999187361,
+      "p99_ms": 1.1580220009273035
+    },
+    {
+      "variant": "EASE (reference)",
+      "NDCG@10": 0.04942551421344783,
+      "size_mb": 39.0625,
+      "p50_ms": 0.08454999988316558,
+      "p95_ms": 0.17380500094077433,
+      "p99_ms": 0.26181699984590523
+    }
+  ],
+  "tests": {
+    "int8 vs fp32 (ONNX)": {
+      "mean_a": 0.10917935590976327,
+      "mean_b": 0.10893688153344769,
+      "diff": 0.00024247437631561518,
+      "ci_low": -0.0005233542401239304,
+      "ci_high": 0.0010027008275127647,
+      "rel_improvement": 0.0022258244673652285,
+      "p_value": 0.5342465753424658
+    },
+    "ONNX fp32 vs PyTorch": {
+      "mean_a": 0.10893688153344769,
+      "mean_b": 0.10893688153344769,
+      "diff": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "rel_improvement": 0.0,
+      "p_value": 1.0
+    }
+  },
+  "onnx_fp32_max_abs_score_diff_vs_pytorch": 1.1444091796875e-05,
+  "cpu_note": "single machine; numbers are for relative comparison",
+  "runtime_sec": 269.2
+}
