@@ -1,6 +1,6 @@
-"""Run the full experiment: grid search -> refit on train+valid -> test -> bootstrap -> segments -> report.
+"""Run the full experiment: grid search -> refit on train+valid -> test -> bootstrap -> segments -> time decay -> report.
 
-Outputs go to results/: results.md, results.json, ndcg_overall.png, ndcg_by_segment.png
+Outputs go to results/: results.md, results.json, ndcg_overall.png, ndcg_by_segment.png, ndcg_decay_by_segment.png
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "src"))  # allow running without `pip install -e .
 
 from recsys.data import load_split  # noqa: E402
 from recsys.evaluate import evaluate  # noqa: E402
-from recsys.models import BPRMF, EASE, ItemKNN, Popularity  # noqa: E402
+from recsys.models import BPRMF, EASE, ItemKNN, Popularity, TimeDecay  # noqa: E402
 from recsys.stats import bootstrap_ci, paired_bootstrap  # noqa: E402
 
 SEED = 42
@@ -37,11 +37,15 @@ COLORS = {"Popularity": "#999999", "ItemKNN": "#E69F00", "EASE": "#0072B2", "BPR
 
 GRIDS = {
     "Popularity": [{}],
-    "ItemKNN": [{"neighbors": n, "shrink": s} for n, s in itertools.product([50, 100, 200, 400], [0, 10, 50])],
-    "EASE": [{"l2": v} for v in [50, 100, 250, 500, 1000, 2000]],
+    # first run had both optima on the lower edge (neighbors=50, l2=50) -> grids extended downward
+    "ItemKNN": [{"neighbors": n, "shrink": s} for n, s in itertools.product([10, 20, 50, 100, 200, 400], [0, 10, 50])],
+    "EASE": [{"l2": v} for v in [5, 10, 20, 50, 100, 250, 500, 1000, 2000]],
     "BPR-MF": [{"dim": d, "weight_decay": w} for d, w in itertools.product([32, 64, 128], [1e-5, 1e-4, 1e-3, 1e-2])],
 }
 FACTORY = {"Popularity": Popularity, "ItemKNN": ItemKNN, "EASE": EASE, "BPR-MF": BPRMF}
+# H5: recency weighting on the item-item models. tau = inf is the undecayed base model.
+DECAY_BASES = ["ItemKNN", "EASE"]
+TAU_DAYS = [0.5, 1, 7, 30, 90, 365, float("inf")]
 
 
 def log(msg: str) -> None:
@@ -90,6 +94,45 @@ def final_test(split, best):
         results[name] = res
         log(f"  {name:10s} test " + " ".join(f"{m}={res[m]:.4f}" for m in METRICS))
     return tv, results
+
+
+def tune_decay(split, best):
+    """H5: keep each base model's best params, pick tau by validation NDCG@10 (train -> valid)."""
+    rows, chosen = [], {}
+    for base in DECAY_BASES:
+        params = best[base]["params"]
+        for tau in TAU_DAYS:
+            model = TimeDecay(FACTORY[base](**params), tau, split.train_times).fit(split.train)
+            score = evaluate(model, split.train, split.valid_items, ks=(K,))[f"NDCG@{K}"]
+            rows.append({"model": f"{base}+decay", "params": params, "tau_days": tau, "valid_NDCG@10": score})
+            log(f"  {base}+decay tau={tau} days valid NDCG@10={score:.4f}")
+            if base not in chosen or score > chosen[base]["valid_NDCG@10"]:
+                chosen[base] = {"params": params, "tau_days": tau, "valid_NDCG@10": score}
+    return rows, chosen
+
+
+def decay_test(split, tv, chosen, test_res, seg):
+    """Refit the chosen decayed models on train+valid; compare with their base model overall and per segment."""
+    tv_times = split.train_plus_valid_times()
+    out = {}
+    for base in DECAY_BASES:
+        c = chosen[base]
+        model = TimeDecay(FACTORY[base](**c["params"]), c["tau_days"], tv_times).fit(tv)
+        res = evaluate(model, tv, split.test_items, ks=(10, 20))
+        res["ndcg_ci"] = bootstrap_ci(res["per_user"]["NDCG@10"])
+        a, b = res["per_user"]["NDCG@10"], test_res[base]["per_user"]["NDCG@10"]
+        res["vs_base"] = paired_bootstrap(a, b)
+        res["vs_base_by_segment"] = {q: paired_bootstrap(a[seg == q], b[seg == q]) for q in ["Q1", "Q2", "Q3", "Q4"]}
+        res["by_segment"] = {q: float(a[seg == q].mean()) for q in ["Q1", "Q2", "Q3", "Q4"]}
+        pop = test_res["Popularity"]["per_user"]["NDCG@10"]
+        res["vs_pop"] = paired_bootstrap(a, pop)
+        res["vs_pop_by_segment"] = {q: paired_bootstrap(a[seg == q], pop[seg == q]) for q in ["Q1", "Q2", "Q3", "Q4"]}
+        out[base] = res
+        r = res["vs_base"]
+        q4 = res["vs_base_by_segment"]["Q4"]
+        log(f"  {base}+decay (tau={c['tau_days']}) test NDCG@10={res['NDCG@10']:.4f} vs base {r['diff']:+.4f} "
+            f"p={fmt_p(r['p_value'])} | Q4 {q4['diff']:+.4f} [{q4['ci_low']:+.4f}, {q4['ci_high']:+.4f}] p={fmt_p(q4['p_value'])}")
+    return out
 
 
 def segment_analysis(split, tv, test_res, best_name, df):
@@ -169,6 +212,31 @@ def plot_overall(test_res, path):
     plt.close(fig)
 
 
+def plot_decay_segments(seg_rows, decay_res, path):
+    """Per-segment NDCG@10: Popularity, each base model and its decayed version."""
+    series = [("Popularity", [r["Popularity_NDCG@10"] for r in seg_rows], COLORS["Popularity"], None)]
+    for base in DECAY_BASES:
+        series.append((base, [r[f"{base}_NDCG@10"] for r in seg_rows], COLORS[base], None))
+        series.append((f"{base}+decay", [decay_res[base]["by_segment"][r["segment"]] for r in seg_rows],
+                       COLORS[base], "//"))
+    fig, ax = plt.subplots(figsize=(8, 4.6))
+    x = np.arange(len(seg_rows))
+    w = 0.16
+    for k, (label, means, color, hatch) in enumerate(series):
+        ax.bar(x + (k - (len(series) - 1) / 2) * w, means, w, color=color, hatch=hatch,
+               edgecolor="white" if hatch else None, label=label)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{r['segment']}\n{r['hist_min']}-{r['hist_max']} items" for r in seg_rows])
+    ax.set_xlabel("User segment by training-history length (quartiles)")
+    ax.set_ylabel("Test NDCG@10")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, fontsize=8)
+    ax.set_title("H5: recency weighting by segment (hatched = time-decayed)", pad=28)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def plot_segments(seg_rows, path):
     fig, ax = plt.subplots(figsize=(8, 4.6))
     x = np.arange(len(seg_rows))
@@ -223,7 +291,8 @@ def main() -> None:
     log(f"3) Paired bootstrap: {best_name} vs others (per-user NDCG@10, 10,000 resamples)")
     pairs = [(best_name, n) for n in MODEL_ORDER if n != best_name]
     # extra pairs needed to judge the hypotheses: H1 (every personalized model vs Popularity), H2
-    for extra in [("ItemKNN", "Popularity"), ("EASE", "Popularity"), ("BPR-MF", "Popularity"), ("BPR-MF", "ItemKNN")]:
+    for extra in [("ItemKNN", "Popularity"), ("EASE", "Popularity"), ("BPR-MF", "Popularity"), ("BPR-MF", "ItemKNN"),
+                  ("EASE", "BPR-MF")]:  # all personalized pairs, whichever model wins validation
         if extra not in pairs and extra[::-1] not in pairs:
             pairs.append(extra)
     boot = []
@@ -235,17 +304,23 @@ def main() -> None:
     log("4) Segment analysis")
     seg_rows, hist_len, seg, target_pop_rank = segment_analysis(split, tv, test_res, best_name, df)
 
-    log("5) Qualitative example (EASE)")
+    log("5) H5: time decay (tau tuned on validation)")
+    decay_grid, decay_chosen = tune_decay(split, best)
+    decay_res = decay_test(split, tv, decay_chosen, test_res, seg)
+
+    log("6) Qualitative example (EASE)")
     qual = qualitative(split, tv, test_res, hist_len, movies)
     title = movies.set_index("movieId")["title"]
     # most recent 5 liked movies before the test item (by timestamp)
     u_df = df[df.userId == qual["userId"]].sort_values(["timestamp", "movieId"])
     qual["recent_history"] = [title[m] for m in u_df["movieId"].iloc[-6:-1]]
 
-    log("6) Writing results")
+    log("7) Writing results")
     plot_overall(test_res, OUT / "ndcg_overall.png")
     plot_segments(seg_rows, OUT / "ndcg_by_segment.png")
-    write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual)
+    plot_decay_segments(seg_rows, decay_res, OUT / "ndcg_decay_by_segment.png")
+    write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual,
+                   decay_grid, decay_chosen, decay_res)
     json_out = {
         "data": data_stats,
         "grid": grid_rows,
@@ -256,6 +331,22 @@ def main() -> None:
         },
         "bootstrap": boot,
         "segments": seg_rows,
+        "time_decay": {
+            "grid": decay_grid,
+            "chosen": decay_chosen,
+            "test": {
+                f"{b}+decay": {
+                    **{m: decay_res[b][m] for m in METRICS},
+                    "NDCG@10_ci95": decay_res[b]["ndcg_ci"],
+                    "vs_base": decay_res[b]["vs_base"],
+                    "vs_base_by_segment": decay_res[b]["vs_base_by_segment"],
+                    "NDCG@10_by_segment": decay_res[b]["by_segment"],
+                    "vs_popularity": decay_res[b]["vs_pop"],
+                    "vs_popularity_by_segment": decay_res[b]["vs_pop_by_segment"],
+                }
+                for b in DECAY_BASES
+            },
+        },
         "qualitative": qual,
         "runtime_sec": round(time.time() - t0, 1),
     }
@@ -263,7 +354,8 @@ def main() -> None:
     log(f"Done in {time.time() - t0:.0f}s")
 
 
-def write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual):
+def write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_rows, qual,
+                   decay_grid, decay_chosen, decay_res):
     L = ["# Results", "", "Auto-generated by `scripts/run_experiments.py`. All numbers are from a single run (seed 42).", ""]
     L += ["## Data", "", tabulate([[k, f"{v:.4%}" if k == "density" else v] for k, v in data_stats.items()],
                                   headers=["stat", "value"], tablefmt="github"), ""]
@@ -296,6 +388,33 @@ def write_markdown(data_stats, grid_rows, best, best_name, test_res, boot, seg_r
                    + [f"{n} NDCG@10" for n in MODEL_ORDER] + [f"{best_name} - Popularity (95% CI)"],
                    tablefmt="github", disable_numparse=True), ""]
     L += ["Popularity rank 1 = most popular item in train+valid.", ""]
+
+    L += ["## H5: time decay (recency-weighted history at scoring time)", ""]
+    L += ["tau picked by validation NDCG@10 with the base model's best params; tau = inf is the base model.", ""]
+    rows = [[f"{b}+decay", json.dumps(decay_chosen[b]["params"]), decay_chosen[b]["tau_days"],
+             f"{decay_chosen[b]['valid_NDCG@10']:.4f}", f"{best[b]['valid_NDCG@10']:.4f}"] for b in DECAY_BASES]
+    L += [tabulate(rows, headers=["model", "base params", "tau (days)", "valid NDCG@10", "base valid NDCG@10"],
+                   tablefmt="github", disable_numparse=True), ""]
+    rows = [[f"{b}+decay"] + [f"{decay_res[b][m]:.4f}" for m in METRICS]
+            + [f"[{decay_res[b]['ndcg_ci'][0]:.4f}, {decay_res[b]['ndcg_ci'][1]:.4f}]"] for b in DECAY_BASES]
+    L += ["Test (refit on train+valid):", "",
+          tabulate(rows, headers=["model"] + METRICS + ["NDCG@10 95% CI"], tablefmt="github"), ""]
+    rows = []
+    for b in DECAY_BASES:
+        for scope, r in [("all", decay_res[b]["vs_base"])] + list(decay_res[b]["vs_base_by_segment"].items()):
+            rows.append([f"{b}+decay vs {b}", scope, f"{r['diff']:+.4f}", f"[{r['ci_low']:+.4f}, {r['ci_high']:+.4f}]",
+                         fmt_p(r["p_value"]), "yes" if r["p_value"] < 0.05 else "no"])
+    for b in DECAY_BASES:
+        for scope, r in [("all", decay_res[b]["vs_pop"])] + list(decay_res[b]["vs_pop_by_segment"].items()):
+            rows.append([f"{b}+decay vs Popularity", scope, f"{r['diff']:+.4f}",
+                         f"[{r['ci_low']:+.4f}, {r['ci_high']:+.4f}]", fmt_p(r["p_value"]),
+                         "yes" if r["p_value"] < 0.05 else "no"])
+    L += ["Paired bootstrap on per-user NDCG@10 (decayed - base, decayed - Popularity):", "",
+          tabulate(rows, headers=["comparison", "users", "diff", "95% CI", "p-value", "significant (0.05)"],
+                   tablefmt="github", disable_numparse=True), ""]
+    rows = [[g["model"], g["tau_days"], f"{g['valid_NDCG@10']:.4f}"] for g in decay_grid]
+    L += ["tau grid:", "", tabulate(rows, headers=["model", "tau (days)", "valid NDCG@10"], tablefmt="github",
+                                     disable_numparse=True), ""]
 
     L += ["## Qualitative example: EASE Top-10", ""]
     L += [f"- user {qual['userId']} (history length {qual['history_length']}, closest to median)",

@@ -3,7 +3,7 @@ import pytest
 
 from recsys.data import iterative_filter, leave_one_out
 from recsys.evaluate import evaluate
-from recsys.models import BPRMF, EASE, ItemKNN, Popularity
+from recsys.models import BPRMF, EASE, ItemKNN, Popularity, TimeDecay
 
 
 @pytest.fixture
@@ -64,3 +64,16 @@ def test_evaluate_keys(split):
     for key in ["Recall@10", "NDCG@10", "Coverage@10", "Recall@20", "NDCG@20"]:
         assert 0.0 <= res[key] <= 1.0
     assert res["per_user"]["NDCG@10"].shape == (split.n_users,)
+
+
+def test_time_decay_inf_equals_base(split):
+    base = EASE(l2=10).fit(split.train).score(np.arange(split.n_users))
+    decayed = TimeDecay(EASE(l2=10), np.inf, split.train_times).fit(split.train).score(np.arange(split.n_users))
+    assert np.allclose(base, decayed)
+
+
+def test_time_decay_weights_recent_history_more(split):
+    m = TimeDecay(ItemKNN(neighbors=10), 1e-6, split.train_times).fit(split.train)  # ~only the latest counts
+    w = m.Xw_.toarray()
+    assert np.allclose(w.max(axis=1), 1.0)                       # latest interaction weighs 1
+    assert ((w > 0) <= (split.train.toarray() > 0)).all()        # never adds unseen items

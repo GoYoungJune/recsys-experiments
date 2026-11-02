@@ -42,6 +42,8 @@ class Split:
     test_items: np.ndarray        # (n_users,) item index held out for test
     user_ids: np.ndarray          # index -> original userId
     item_ids: np.ndarray          # index -> original movieId
+    train_times: sp.csr_matrix | None = None   # same pattern as train, value = unix timestamp
+    valid_times: np.ndarray | None = None      # (n_users,) timestamp of the validation item
 
     @property
     def n_users(self) -> int:
@@ -60,6 +62,15 @@ class Split:
         out = (self.train + add).tocsr()
         out.data[:] = 1.0
         return out
+
+    def train_plus_valid_times(self) -> sp.csr_matrix:
+        """Timestamps matching train_plus_valid() (used by time-decayed models in the final refit)."""
+        # build from coordinates instead of adding matrices: addition would drop timestamps equal to 0
+        tt = self.train_times.tocoo()
+        rows = np.concatenate([tt.row, np.arange(self.n_users)])
+        cols = np.concatenate([tt.col, self.valid_items])
+        data = np.concatenate([tt.data, self.valid_times])
+        return sp.csr_matrix((data, (rows, cols)), shape=self.train.shape)
 
 
 def leave_one_out(df: pd.DataFrame) -> Split:
@@ -81,6 +92,9 @@ def leave_one_out(df: pd.DataFrame) -> Split:
     valid_items = np.empty(n_users, dtype=np.int64)
     test_items[u_idx[pos_from_end == 0]] = i_idx[pos_from_end == 0]
     valid_items[u_idx[pos_from_end == 1]] = i_idx[pos_from_end == 1]
+    ts = df["timestamp"].to_numpy().astype(np.float64)
+    valid_times = np.empty(n_users, dtype=np.float64)
+    valid_times[u_idx[pos_from_end == 1]] = ts[pos_from_end == 1]
 
     tr = pos_from_end >= 2
     train = sp.csr_matrix(
@@ -88,7 +102,8 @@ def leave_one_out(df: pd.DataFrame) -> Split:
     )
     train.sum_duplicates()
     train.data[:] = 1.0
-    return Split(train, valid_items, test_items, user_ids, item_ids)
+    train_times = sp.csr_matrix((ts[tr], (u_idx[tr], i_idx[tr])), shape=(n_users, n_items))
+    return Split(train, valid_items, test_items, user_ids, item_ids, train_times, valid_times)
 
 
 def load_split(raw_dir: str | Path) -> tuple[Split, pd.DataFrame]:

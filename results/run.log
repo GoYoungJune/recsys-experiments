@@ -1,50 +1,76 @@
-[19:24:06] Data: {'n_users': 601, 'n_items': 1955, 'n_positives': 41227, 'n_train': 40025, 'density': 0.035088152312216216}
-[19:24:06] 1) Grid search (validation NDCG@10)
-[19:24:06]   Popularity {} valid NDCG@10=0.0201 {} (0.0s)
-[19:24:06]   ItemKNN    {'neighbors': 50, 'shrink': 0} valid NDCG@10=0.0431 {} (0.2s)
-[19:24:06]   ItemKNN    {'neighbors': 50, 'shrink': 10} valid NDCG@10=0.0429 {} (0.2s)
-[19:24:06]   ItemKNN    {'neighbors': 50, 'shrink': 50} valid NDCG@10=0.0408 {} (0.2s)
-[19:24:07]   ItemKNN    {'neighbors': 100, 'shrink': 0} valid NDCG@10=0.0390 {} (0.2s)
-[19:24:07]   ItemKNN    {'neighbors': 100, 'shrink': 10} valid NDCG@10=0.0405 {} (0.2s)
-[19:24:07]   ItemKNN    {'neighbors': 100, 'shrink': 50} valid NDCG@10=0.0413 {} (0.2s)
-[19:24:07]   ItemKNN    {'neighbors': 200, 'shrink': 0} valid NDCG@10=0.0386 {} (0.2s)
-[19:24:08]   ItemKNN    {'neighbors': 200, 'shrink': 10} valid NDCG@10=0.0369 {} (0.2s)
-[19:24:08]   ItemKNN    {'neighbors': 200, 'shrink': 50} valid NDCG@10=0.0396 {} (0.2s)
-[19:24:08]   ItemKNN    {'neighbors': 400, 'shrink': 0} valid NDCG@10=0.0394 {} (0.2s)
-[19:24:08]   ItemKNN    {'neighbors': 400, 'shrink': 10} valid NDCG@10=0.0425 {} (0.2s)
-[19:24:08]   ItemKNN    {'neighbors': 400, 'shrink': 50} valid NDCG@10=0.0382 {} (0.2s)
-[19:24:09]   EASE       {'l2': 50} valid NDCG@10=0.0473 {} (0.3s)
-[19:24:09]   EASE       {'l2': 100} valid NDCG@10=0.0462 {} (0.2s)
-[19:24:09]   EASE       {'l2': 250} valid NDCG@10=0.0468 {} (0.3s)
-[19:24:09]   EASE       {'l2': 500} valid NDCG@10=0.0463 {} (0.3s)
-[19:24:10]   EASE       {'l2': 1000} valid NDCG@10=0.0448 {} (0.3s)
-[19:24:10]   EASE       {'l2': 2000} valid NDCG@10=0.0424 {} (0.3s)
-[19:24:21]   BPR-MF     {'dim': 32, 'weight_decay': 1e-05} valid NDCG@10=0.0424 {'best_epoch': 100} (11.4s)
-[19:24:31]   BPR-MF     {'dim': 32, 'weight_decay': 0.0001} valid NDCG@10=0.0423 {'best_epoch': 100} (9.4s)
-[19:24:41]   BPR-MF     {'dim': 32, 'weight_decay': 0.001} valid NDCG@10=0.0439 {'best_epoch': 115} (10.5s)
-[19:24:50]   BPR-MF     {'dim': 32, 'weight_decay': 0.01} valid NDCG@10=0.0433 {'best_epoch': 90} (8.6s)
-[19:24:57]   BPR-MF     {'dim': 64, 'weight_decay': 1e-05} valid NDCG@10=0.0326 {'best_epoch': 60} (6.7s)
-[19:25:07]   BPR-MF     {'dim': 64, 'weight_decay': 0.0001} valid NDCG@10=0.0371 {'best_epoch': 100} (10.0s)
-[19:25:17]   BPR-MF     {'dim': 64, 'weight_decay': 0.001} valid NDCG@10=0.0378 {'best_epoch': 100} (10.4s)
-[19:25:24]   BPR-MF     {'dim': 64, 'weight_decay': 0.01} valid NDCG@10=0.0368 {'best_epoch': 60} (7.0s)
-[19:25:30]   BPR-MF     {'dim': 128, 'weight_decay': 1e-05} valid NDCG@10=0.0371 {'best_epoch': 40} (5.6s)
-[19:25:35]   BPR-MF     {'dim': 128, 'weight_decay': 0.0001} valid NDCG@10=0.0372 {'best_epoch': 40} (5.6s)
-[19:25:41]   BPR-MF     {'dim': 128, 'weight_decay': 0.001} valid NDCG@10=0.0387 {'best_epoch': 40} (5.6s)
-[19:25:48]   BPR-MF     {'dim': 128, 'weight_decay': 0.01} valid NDCG@10=0.0412 {'best_epoch': 60} (7.4s)
-[19:25:48]    best on validation: EASE
-[19:25:48] 2) Refit on train+valid, evaluate on test
-[19:25:48]   Popularity test Recall@10=0.0449 NDCG@10=0.0234 Recall@20=0.0765 NDCG@20=0.0313 Coverage@10=0.0307
-[19:25:49]   ItemKNN    test Recall@10=0.0682 NDCG@10=0.0337 Recall@20=0.1564 NDCG@20=0.0557 Coverage@10=0.3524
-[19:25:49]   EASE       test Recall@10=0.0666 NDCG@10=0.0384 Recall@20=0.1531 NDCG@20=0.0604 Coverage@10=0.2573
-[19:25:58]   BPR-MF     test Recall@10=0.0649 NDCG@10=0.0299 Recall@20=0.1098 NDCG@20=0.0412 Coverage@10=0.3985
-[19:25:58] 3) Paired bootstrap: EASE vs others (per-user NDCG@10, 10,000 resamples)
-[19:25:58]    EASE - Popularity: diff=+0.0150 CI=[+0.0007, +0.0297] p=0.043
-[19:25:58]    EASE - ItemKNN: diff=+0.0046 CI=[-0.0072, +0.0164] p=0.435
-[19:25:58]    EASE - BPR-MF: diff=+0.0085 CI=[-0.0043, +0.0216] p=0.198
-[19:25:58]    ItemKNN - Popularity: diff=+0.0104 CI=[-0.0032, +0.0244] p=0.139
-[19:25:58]    BPR-MF - Popularity: diff=+0.0065 CI=[-0.0057, +0.0188] p=0.291
-[19:25:58]    BPR-MF - ItemKNN: diff=-0.0039 CI=[-0.0158, +0.0079] p=0.527
-[19:25:58] 4) Segment analysis
-[19:25:59] 5) Qualitative example (EASE)
-[19:25:59] 6) Writing results
-[19:25:59] Done in 113s
+[20:54:57] Data: {'n_users': 601, 'n_items': 1955, 'n_positives': 41227, 'n_train': 40025, 'density': 0.035088152312216216}
+[20:54:57] 1) Grid search (validation NDCG@10)
+[20:54:57]   Popularity {} valid NDCG@10=0.0201 {} (0.0s)
+[20:54:57]   ItemKNN    {'neighbors': 10, 'shrink': 0} valid NDCG@10=0.0448 {} (0.2s)
+[20:54:58]   ItemKNN    {'neighbors': 10, 'shrink': 10} valid NDCG@10=0.0489 {} (0.2s)
+[20:54:58]   ItemKNN    {'neighbors': 10, 'shrink': 50} valid NDCG@10=0.0431 {} (0.2s)
+[20:54:58]   ItemKNN    {'neighbors': 20, 'shrink': 0} valid NDCG@10=0.0425 {} (0.2s)
+[20:54:58]   ItemKNN    {'neighbors': 20, 'shrink': 10} valid NDCG@10=0.0450 {} (0.2s)
+[20:54:58]   ItemKNN    {'neighbors': 20, 'shrink': 50} valid NDCG@10=0.0386 {} (0.2s)
+[20:54:59]   ItemKNN    {'neighbors': 50, 'shrink': 0} valid NDCG@10=0.0431 {} (0.2s)
+[20:54:59]   ItemKNN    {'neighbors': 50, 'shrink': 10} valid NDCG@10=0.0429 {} (0.2s)
+[20:54:59]   ItemKNN    {'neighbors': 50, 'shrink': 50} valid NDCG@10=0.0408 {} (0.2s)
+[20:54:59]   ItemKNN    {'neighbors': 100, 'shrink': 0} valid NDCG@10=0.0390 {} (0.2s)
+[20:54:59]   ItemKNN    {'neighbors': 100, 'shrink': 10} valid NDCG@10=0.0405 {} (0.2s)
+[20:55:00]   ItemKNN    {'neighbors': 100, 'shrink': 50} valid NDCG@10=0.0413 {} (0.2s)
+[20:55:00]   ItemKNN    {'neighbors': 200, 'shrink': 0} valid NDCG@10=0.0386 {} (0.2s)
+[20:55:00]   ItemKNN    {'neighbors': 200, 'shrink': 10} valid NDCG@10=0.0369 {} (0.2s)
+[20:55:00]   ItemKNN    {'neighbors': 200, 'shrink': 50} valid NDCG@10=0.0396 {} (0.2s)
+[20:55:01]   ItemKNN    {'neighbors': 400, 'shrink': 0} valid NDCG@10=0.0394 {} (0.2s)
+[20:55:01]   ItemKNN    {'neighbors': 400, 'shrink': 10} valid NDCG@10=0.0425 {} (0.2s)
+[20:55:01]   ItemKNN    {'neighbors': 400, 'shrink': 50} valid NDCG@10=0.0382 {} (0.2s)
+[20:55:01]   EASE       {'l2': 5} valid NDCG@10=0.0384 {} (0.2s)
+[20:55:01]   EASE       {'l2': 10} valid NDCG@10=0.0414 {} (0.2s)
+[20:55:02]   EASE       {'l2': 20} valid NDCG@10=0.0458 {} (0.2s)
+[20:55:02]   EASE       {'l2': 50} valid NDCG@10=0.0473 {} (0.2s)
+[20:55:02]   EASE       {'l2': 100} valid NDCG@10=0.0462 {} (0.2s)
+[20:55:02]   EASE       {'l2': 250} valid NDCG@10=0.0468 {} (0.2s)
+[20:55:03]   EASE       {'l2': 500} valid NDCG@10=0.0463 {} (0.2s)
+[20:55:03]   EASE       {'l2': 1000} valid NDCG@10=0.0448 {} (0.3s)
+[20:55:03]   EASE       {'l2': 2000} valid NDCG@10=0.0424 {} (0.2s)
+[20:55:14]   BPR-MF     {'dim': 32, 'weight_decay': 1e-05} valid NDCG@10=0.0424 {'best_epoch': 100} (10.5s)
+[20:55:22]   BPR-MF     {'dim': 32, 'weight_decay': 0.0001} valid NDCG@10=0.0423 {'best_epoch': 100} (8.6s)
+[20:55:32]   BPR-MF     {'dim': 32, 'weight_decay': 0.001} valid NDCG@10=0.0439 {'best_epoch': 115} (9.6s)
+[20:55:40]   BPR-MF     {'dim': 32, 'weight_decay': 0.01} valid NDCG@10=0.0433 {'best_epoch': 90} (7.7s)
+[20:55:46]   BPR-MF     {'dim': 64, 'weight_decay': 1e-05} valid NDCG@10=0.0326 {'best_epoch': 60} (6.1s)
+[20:55:55]   BPR-MF     {'dim': 64, 'weight_decay': 0.0001} valid NDCG@10=0.0371 {'best_epoch': 100} (9.2s)
+[20:56:04]   BPR-MF     {'dim': 64, 'weight_decay': 0.001} valid NDCG@10=0.0378 {'best_epoch': 100} (9.2s)
+[20:56:10]   BPR-MF     {'dim': 64, 'weight_decay': 0.01} valid NDCG@10=0.0368 {'best_epoch': 60} (6.1s)
+[20:56:15]   BPR-MF     {'dim': 128, 'weight_decay': 1e-05} valid NDCG@10=0.0371 {'best_epoch': 40} (5.0s)
+[20:56:20]   BPR-MF     {'dim': 128, 'weight_decay': 0.0001} valid NDCG@10=0.0372 {'best_epoch': 40} (5.1s)
+[20:56:25]   BPR-MF     {'dim': 128, 'weight_decay': 0.001} valid NDCG@10=0.0387 {'best_epoch': 40} (5.0s)
+[20:56:32]   BPR-MF     {'dim': 128, 'weight_decay': 0.01} valid NDCG@10=0.0412 {'best_epoch': 60} (6.7s)
+[20:56:32]    best on validation: ItemKNN
+[20:56:32] 2) Refit on train+valid, evaluate on test
+[20:56:32]   Popularity test Recall@10=0.0449 NDCG@10=0.0234 Recall@20=0.0765 NDCG@20=0.0313 Coverage@10=0.0307
+[20:56:32]   ItemKNN    test Recall@10=0.0815 NDCG@10=0.0363 Recall@20=0.1381 NDCG@20=0.0506 Coverage@10=0.3330
+[20:56:32]   EASE       test Recall@10=0.0666 NDCG@10=0.0384 Recall@20=0.1531 NDCG@20=0.0604 Coverage@10=0.2573
+[20:56:40]   BPR-MF     test Recall@10=0.0649 NDCG@10=0.0299 Recall@20=0.1098 NDCG@20=0.0412 Coverage@10=0.3985
+[20:56:40] 3) Paired bootstrap: ItemKNN vs others (per-user NDCG@10, 10,000 resamples)
+[20:56:40]    ItemKNN - Popularity: diff=+0.0129 CI=[-0.0005, +0.0262] p=0.061
+[20:56:40]    ItemKNN - EASE: diff=-0.0021 CI=[-0.0122, +0.0076] p=0.678
+[20:56:40]    ItemKNN - BPR-MF: diff=+0.0064 CI=[-0.0058, +0.0189] p=0.302
+[20:56:40]    EASE - Popularity: diff=+0.0150 CI=[+0.0007, +0.0297] p=0.043
+[20:56:41]    BPR-MF - Popularity: diff=+0.0065 CI=[-0.0057, +0.0188] p=0.291
+[20:56:41]    EASE - BPR-MF: diff=+0.0085 CI=[-0.0043, +0.0216] p=0.198
+[20:56:41] 4) Segment analysis
+[20:56:41] 5) H5: time decay (tau tuned on validation)
+[20:56:41]   ItemKNN+decay tau=0.5 days valid NDCG@10=0.0563
+[20:56:41]   ItemKNN+decay tau=1 days valid NDCG@10=0.0568
+[20:56:41]   ItemKNN+decay tau=7 days valid NDCG@10=0.0561
+[20:56:42]   ItemKNN+decay tau=30 days valid NDCG@10=0.0551
+[20:56:42]   ItemKNN+decay tau=90 days valid NDCG@10=0.0540
+[20:56:42]   ItemKNN+decay tau=365 days valid NDCG@10=0.0525
+[20:56:42]   ItemKNN+decay tau=inf days valid NDCG@10=0.0489
+[20:56:42]   EASE+decay tau=0.5 days valid NDCG@10=0.0577
+[20:56:43]   EASE+decay tau=1 days valid NDCG@10=0.0543
+[20:56:43]   EASE+decay tau=7 days valid NDCG@10=0.0511
+[20:56:43]   EASE+decay tau=30 days valid NDCG@10=0.0512
+[20:56:43]   EASE+decay tau=90 days valid NDCG@10=0.0510
+[20:56:44]   EASE+decay tau=365 days valid NDCG@10=0.0509
+[20:56:44]   EASE+decay tau=inf days valid NDCG@10=0.0473
+[20:56:44]   ItemKNN+decay (tau=1) test NDCG@10=0.0511 vs base +0.0148 p=0.002 | Q4 +0.0329 [+0.0075, +0.0623] p=0.020
+[20:56:45]   EASE+decay (tau=0.5) test NDCG@10=0.0534 vs base +0.0150 p=<0.001 | Q4 +0.0503 [+0.0234, +0.0802] p=0.001
+[20:56:45] 6) Qualitative example (EASE)
+[20:56:45] 7) Writing results
+[20:56:45] Done in 108s

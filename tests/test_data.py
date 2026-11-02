@@ -55,3 +55,11 @@ def test_train_plus_valid_adds_exactly_one_per_user(toy_df):
     assert set(np.unique(tv.data)) == {1.0}
     assert (tv.toarray()[np.arange(s.n_users), s.valid_items] == 1).all()
     assert (tv.toarray()[np.arange(s.n_users), s.test_items] == 0).all()
+
+
+def test_train_times_match_train(toy_df):
+    s = leave_one_out(iterative_filter(toy_df, min_count=5))
+    assert s.train_times.nnz == s.train.nnz
+    tvt = s.train_plus_valid_times()
+    assert tvt.nnz == s.train_plus_valid().nnz
+    assert np.allclose(tvt.toarray()[np.arange(s.n_users), s.valid_items], s.valid_times)
