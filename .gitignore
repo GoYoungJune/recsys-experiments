@@ -1,0 +1,10 @@
+# MovieLens data: redistribution restricted by license -> download with scripts/download_data.py
+data/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/

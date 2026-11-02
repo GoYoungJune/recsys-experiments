@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recsys-experiments"
+version = "0.1.0"
+description = "Top-K recommendation on MovieLens: Popularity vs ItemKNN vs EASE vs BPR-MF under one protocol"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "GoYoungJune" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "torch",
+    "matplotlib",
+    "tabulate",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
