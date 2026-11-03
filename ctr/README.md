@@ -52,6 +52,16 @@ LR에도 user_id와 movie_id 가중치가 있습니다. 즉 LR은 "사용자 편
 FM이 더하는 "특성 쌍의 상호작용"은 +0.004, MLP·Cross layer는 그 위에 아무것도 더하지 못했습니다. 평점 데이터에서는 개인 취향의 상호작용보다 **사용자의 후한 정도와 영화의 품질**이 대부분을 설명한다는 뜻입니다.
 딥 모델은 1~4 epoch 만에 과적합했습니다. 하이퍼파라미터를 튜닝하지 않은 비교라는 한계가 있지만, 같은 예산이라면 단순한 모델이 충분했습니다. 1부 H2(BPR-MF ≯ ItemKNN)와 같은 방향입니다.
 
+**학습 시드의 운인가? (사후 점검, [`results/ctr/seeds.md`](../results/ctr/seeds.md))** 같은 분할에서 LR·FM·DeepFM을 시드 5개로 다시 학습했습니다.
+
+| 같은 시드끼리의 AUC 차이 | 평균 | [최소, 최대] | 차이 > 0인 시드 |
+|---|---|---|---|
+| FM − LR | +0.0033 | [+0.0014, +0.0059] | 5 / 5 |
+| DeepFM − FM | −0.0053 | [−0.0114, −0.0006] | 0 / 5 |
+
+방향은 시드와 상관없이 일관됩니다. FM은 늘 LR보다 조금 높고, DeepFM은 늘 FM보다 낮습니다.
+다만 시드에 따른 AUC 표준편차가 FM 0.0020, DeepFM 0.0028로 모델 간 차이와 비슷한 크기입니다. 그래서 C1은 사전 등록한 기준(사용자 표본 CI)대로 "미확인"을 유지하고, 이 점검은 보조 근거로만 씁니다.
+
 ### C3: 보정이 오히려 나빠진 이유 (사후 분석)
 
 ![calibration](../results/ctr/calibration.png)
@@ -83,7 +93,7 @@ FM이 더하는 "특성 쌍의 상호작용"은 +0.004, MLP·Cross layer는 그 
 ## 계획에서 달라진 점
 
 - 사전 등록한 분석은 그대로 실행했습니다.
-- **추가한 것(사후):** C3 원인 분석(valid의 신규·기존 사용자별 보정 상태, 기존 사용자만으로 맞춘 Platt). 판정에는 쓰지 않았습니다.
+- **추가한 것(사후):** C3 원인 분석(valid의 신규·기존 사용자별 보정 상태, 기존 사용자만으로 맞춘 Platt), 학습 시드 5개 점검. 판정에는 쓰지 않았습니다.
 
 ## 한계
 
@@ -109,8 +119,9 @@ python scripts/run_ctr.py                  # CPU 약 3분 → results/ctr/
 | `src/recsys/ctr/models.py` | LR, FM, DeepFM, DCN-v2 (PyTorch), 조기 종료 학습 |
 | `src/recsys/ctr/metrics.py` | 가중 AUC·LogLoss·ECE, 사용자 cluster bootstrap, Platt scaling |
 | `scripts/run_ctr.py` | 전체 실험과 결과 파일 생성 |
+| `scripts/ctr_seeds.py` | 사후 점검: 학습 시드 5개 (약 8분) |
 | `tests/test_ctr.py` | AUC 정의 일치, 보정, cluster bootstrap, 시간 분할·어휘 누수, 상호작용 학습, 재현성 |
-| `results/ctr/` | results.md, results.json, calibration.png, cold_warm.png, run.log |
+| `results/ctr/` | results.md, results.json, calibration.png, cold_warm.png, run.log, seeds.md·json·log |
 | `ctr/INTERVIEW.md` | 면접 예상 질문과 답 |
 
 ## 참고 문헌

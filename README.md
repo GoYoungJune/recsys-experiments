@@ -1,12 +1,12 @@
 # recsys-experiments
 
-MovieLens(ml-latest-small)에서 Top-K 추천 모델 4개(Popularity · ItemKNN · EASE · BPR-MF)를 **같은 분할 · 같은 평가 · 같은 튜닝 예산**으로 비교한 실험입니다.
-"가설 → 실험 → 통계 검정 → 원인 분석 → 후속 실험" 순서로 정리했습니다.
+추천·랭킹·실험 분석을 다섯 개의 실험으로 정리한 저장소입니다. 모든 실험이 같은 원칙을 따릅니다.
 
-> **한 줄 요약:** 헤비 유저에서 개인화 모델이 인기순보다 못하다는 것을 세그먼트 분석으로 발견했고,
-> 원인을 "오래된 취향이 최근 취향을 덮는다"로 가정했습니다. 점수 계산 때 최근 기록에 가중치를 주자
-> 헤비 유저(Q4)의 EASE NDCG@10이 **0.0092 → 0.0595**로 올랐습니다(+0.0503, 95% CI [+0.0234, +0.0802], p=0.001).
-> 기록이 하루 안에 몰려 있는 Q1·Q3에서는 예측대로 유의한 변화가 없었습니다.
+- **누수 없는 평가:** 시간순 분할을 쓰고, 어휘·통계는 학습 데이터에서만 만듭니다. 추천은 샘플링 없이 전체 아이템을 랭킹합니다.
+- **가설을 먼저 정합니다:** 판정 기준은 실행 전에 고정합니다. 4·5부는 결과를 열기 전에 계획을 커밋해 사전 등록했습니다.
+- **차이는 신뢰구간으로 판단합니다:** 사용자 단위 paired / cluster bootstrap을 쓰고, 유의하지 않은 차이는 "낫다"고 쓰지 않습니다.
+- **기각된 가설도 그대로 보고합니다:** 원인을 분석하고, 사후 분석은 사후라고 표시합니다.
+- **수치는 결과 파일과 대조합니다:** 모든 README 수치는 스크립트가 만든 `results/` 파일과 대조한 값입니다.
 
 ## 이 저장소의 프로젝트
 
@@ -20,6 +20,18 @@ MovieLens(ml-latest-small)에서 Top-K 추천 모델 4개(Popularity · ItemKNN 
 | 진행 중 | 상품 검색 리랭킹 (Amazon ESCI): BM25 → 임베딩 → 리랭커 → LLM | 코드·테스트 완료, 실행 전 | `pip install -e ".[search]"` → `python scripts/download_data.py esci` → `python scripts/run_search.py` |
 
 면접 대비 질문과 답: [`INTERVIEW.md`](INTERVIEW.md), [`abtest/INTERVIEW.md`](abtest/INTERVIEW.md), [`uplift/INTERVIEW.md`](uplift/INTERVIEW.md), [`ctr/INTERVIEW.md`](ctr/INTERVIEW.md)
+
+---
+
+# 1부: MovieLens small — 추천 모델 4개 비교와 시간 감쇠
+
+MovieLens(ml-latest-small)에서 Top-K 추천 모델 4개(Popularity · ItemKNN · EASE · BPR-MF)를 **같은 분할 · 같은 평가 · 같은 튜닝 예산**으로 비교한 실험입니다.
+"가설 → 실험 → 통계 검정 → 원인 분석 → 후속 실험" 순서로 정리했습니다.
+
+> **한 줄 요약:** 헤비 유저에서 개인화 모델이 인기순보다 못하다는 것을 세그먼트 분석으로 발견했고,
+> 원인을 "오래된 취향이 최근 취향을 덮는다"로 가정했습니다. 점수 계산 때 최근 기록에 가중치를 주자
+> 헤비 유저(Q4)의 EASE NDCG@10이 **0.0092 → 0.0595**로 올랐습니다(+0.0503, 95% CI [+0.0234, +0.0802], p=0.001).
+> 기록이 하루 안에 몰려 있는 Q1·Q3에서는 예측대로 유의한 변화가 없었습니다.
 
 ## 핵심 결과
 
@@ -211,22 +223,24 @@ MovieLens 데이터는 라이선스상 재배포가 제한되어 저장소에 �
 ```
 recsys-experiments/
 ├── scripts/
-│   ├── download_data.py      # MovieLens 다운로드
-│   └── run_experiments.py    # 그리드 → 재학습 → test → bootstrap → 세그먼트 → 시간 감쇠 → 리포트
+│   ├── download_data.py      # 데이터 받기: ml-latest-small, ml-1m, hillstrom, esci (체크섬 확인)
+│   ├── run_experiments.py    # 1부 (--dataset ml-1m 이면 2부)
+│   ├── benchmark_serving.py  # 2부 ONNX int8 서빙 측정 · serve.py: FastAPI 데모
+│   ├── run_abtest.py         # 3부 A/B 시뮬레이션
+│   ├── run_uplift.py         # 4부 실제 이메일 A/B · uplift_robustness.py: 분할 50개 점검
+│   ├── run_ctr.py            # 5부 CTR 예측 · ctr_seeds.py: 학습 시드 점검
+│   └── run_search.py         # 진행 중: 검색 리랭킹
 ├── src/recsys/
-│   ├── data.py               # positive 추출, 반복 필터링, 시간순 Leave-One-Out
-│   ├── metrics.py            # Recall@K, NDCG@K, Coverage@K (비관적 동점 처리)
-│   ├── evaluate.py           # 본 아이템 마스킹 + 전체 랭킹 평가
-│   ├── stats.py              # paired bootstrap, bootstrap CI
-│   └── models/
-│       ├── base.py           # Recommender ABC: fit / score / recommend
-│       ├── popularity.py
-│       ├── itemknn.py
-│       ├── ease.py
-│       ├── bpr.py            # PyTorch BPR-MF + 조기 종료
-│       └── time_decay.py     # ItemKNN·EASE 점수 계산 때 최근 기록 가중
-├── tests/                    # 누수, 필터링, 지표, 동점, 본 아이템 미추천, bootstrap, 시간 감쇠
-├── results/                  # results.md, results.json, *.png, run.log
+│   ├── data.py · metrics.py · evaluate.py · stats.py   # 분할, 랭킹 지표, 전체 랭킹 평가, paired bootstrap
+│   ├── models/               # Popularity, ItemKNN, EASE, BPR-MF, 시간 감쇠, SASRec (fit / score 공통 인터페이스)
+│   ├── serving.py            # ONNX 내보내기와 int8 양자화
+│   ├── abtest/               # 3부: 시뮬레이션, CUPED, O'Brien-Fleming, SRM
+│   ├── uplift/               # 4부: SRM·SMD, Holm, T-learner, 정책 가치(Hajek)
+│   ├── ctr/                  # 5부: 시간 분할·인코더, LR/FM/DeepFM/DCN-v2, AUC·ECE·cluster bootstrap·Platt
+│   └── search/               # 진행 중: BM25, 임베딩, 리랭커, LLM
+├── ml1m/ · abtest/ · uplift/ · ctr/   # 부별 README, INTERVIEW, PREREG(사전 등록)
+├── tests/                    # 누수, 동점, 인과 마스크, ONNX 일치, 정책 가치 비편향, AUC 정의 일치 등
+├── results/                  # 스크립트가 만든 results.md, results.json, 그래프, 실행 로그
 ├── DECISIONS.md              # 설계 결정과 기각한 대안
 ├── pyproject.toml · Makefile · LICENSE
 ```
@@ -241,4 +255,4 @@ recsys-experiments/
 
 ## License
 
-코드는 MIT License입니다. MovieLens 데이터는 이 라이선스의 대상이 아니며 GroupLens의 이용 약관을 따릅니다. 자세한 내용은 [LICENSE](LICENSE)를 보세요.
+코드는 MIT License입니다. 데이터(MovieLens, Hillstrom, Amazon ESCI)는 저장소에 포함하지 않았고 이 라이선스의 대상이 아닙니다. 각 데이터의 이용 약관을 따르세요(MovieLens는 GroupLens 약관). 자세한 내용은 [LICENSE](LICENSE)를 보세요.
