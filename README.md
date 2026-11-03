@@ -15,7 +15,7 @@ MovieLens(ml-latest-small)에서 Top-K 추천 모델 4개(Popularity · ItemKNN 
 | 1부 | MovieLens small: 추천 모델 4개 비교, 세그먼트 분석, 시간 감쇠 (이 README) | 헤비 유저 EASE NDCG@10 0.0092 → 0.0595 (p=0.001) | 아래 1~9장 |
 | 2부 | ml-1m으로 확장, SASRec, ONNX int8 CPU 서빙 | SASRec 0.1093 vs EASE+감쇠 0.0593 (p<0.001), p50 0.77ms | [`ml1m/README.md`](ml1m/README.md) |
 | 3부 | A/B 테스트 시뮬레이션: 검정력, CUPED, 중간 엿보기, SRM | CUPED로 표본 35% 절약, 엿보기 거짓 양성 21.9% → 4.5% | [`abtest/README.md`](abtest/README.md) |
-| 진행 중 | 상품 검색 리랭킹 (Amazon ESCI): BM25 → 임베딩 → 리랭커 → LLM | 코드·테스트 완료, 실행 전 | `scripts/run_search.py` |
+| 진행 중 | 상품 검색 리랭킹 (Amazon ESCI): BM25 → 임베딩 → 리랭커 → LLM | 코드·테스트 완료, 실행 전 | `python scripts/download_data.py esci` → `python scripts/run_search.py` |
 
 면접 대비 질문과 답: [`INTERVIEW.md`](INTERVIEW.md), [`abtest/INTERVIEW.md`](abtest/INTERVIEW.md)
 
