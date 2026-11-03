@@ -4,6 +4,7 @@ The datasets are not redistributed in this repository (see LICENSE); run this sc
     python scripts/download_data.py            # ml-latest-small (part 1)
     python scripts/download_data.py ml-1m      # part 2
     python scripts/download_data.py esci       # search reranking, about 1.2 GB
+    python scripts/download_data.py hillstrom  # part 4, real email A/B test, 4 MB
 """
 from __future__ import annotations
 
@@ -30,6 +31,11 @@ ESCI_FILES = {
     "products.parquet": ("shopping_queries_dataset_products.parquet",
                          "25124442d064d64b26f74082d6fa09438d679efc0c183cf28d19064a2b65a265"),
 }
+# Kevin Hillstrom's MineThatData E-Mail Analytics challenge (2008). The server is HTTP only, so the file is
+# checked against a fixed SHA-256 instead of relying on TLS.
+HILLSTROM_URL = ("http://www.minethatdata.com/"
+                 "Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv")
+HILLSTROM_SHA = "0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece"
 
 
 def ssl_context() -> ssl.SSLContext:
@@ -64,10 +70,28 @@ def download_esci() -> None:
         print(f"  saved {path} (checksum ok)")
 
 
+def download_hillstrom() -> None:
+    path = DATA / "hillstrom" / "hillstrom.csv"
+    if path.exists():
+        print(f"Already downloaded: {path}")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Downloading {HILLSTROM_URL} ...")
+    with urllib.request.urlopen(HILLSTROM_URL, timeout=60) as resp:
+        payload = resp.read()
+    if hashlib.sha256(payload).hexdigest() != HILLSTROM_SHA:
+        raise RuntimeError("Checksum mismatch for the Hillstrom file; nothing was saved.")
+    path.write_bytes(payload)
+    print(f"  saved {path} (checksum ok)")
+
+
 def main() -> None:
     name = sys.argv[1] if len(sys.argv) > 1 else "ml-latest-small"
     if name == "esci":
         download_esci()
+        return
+    if name == "hillstrom":
+        download_hillstrom()
         return
     url, files, out_dir = DATASETS[name]
     out_dir.mkdir(parents=True, exist_ok=True)
