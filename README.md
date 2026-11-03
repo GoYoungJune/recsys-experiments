@@ -16,9 +16,10 @@ MovieLens(ml-latest-small)에서 Top-K 추천 모델 4개(Popularity · ItemKNN 
 | 2부 | ml-1m으로 확장, SASRec, ONNX int8 CPU 서빙 | SASRec 0.1093 vs EASE+감쇠 0.0593 (p<0.001), p50 0.77ms | [`ml1m/README.md`](ml1m/README.md) |
 | 3부 | A/B 테스트 시뮬레이션: 검정력, CUPED, 중간 엿보기, SRM | CUPED로 표본 35% 절약, 엿보기 거짓 양성 21.9% → 4.5% | [`abtest/README.md`](abtest/README.md) |
 | 4부 | 실제 이메일 A/B 테스트(Hillstrom): 사전 등록, 이질적 효과, 업리프트 타겟팅 | 메일 효과 Mens +7.66%p, 이질성 확인, 그러나 타겟팅 이득 없음(−0.27%p, CI [−0.83, +0.29]) → 원인 규명 | [`uplift/README.md`](uplift/README.md) |
+| 5부 | CTR 예측(ml-1m, 시간순 분할): LR · FM · DeepFM · DCN-v2, 보정, 콜드 스타트 | 딥 모델 이득 없음(DeepFM − FM −0.0030). 검증 기간으로 맞춘 보정이 ECE 0.0180 → 0.0452로 악화 → 신규 사용자 비율 차이로 규명 | [`ctr/README.md`](ctr/README.md) |
 | 진행 중 | 상품 검색 리랭킹 (Amazon ESCI): BM25 → 임베딩 → 리랭커 → LLM | 코드·테스트 완료, 실행 전 | `pip install -e ".[search]"` → `python scripts/download_data.py esci` → `python scripts/run_search.py` |
 
-면접 대비 질문과 답: [`INTERVIEW.md`](INTERVIEW.md), [`abtest/INTERVIEW.md`](abtest/INTERVIEW.md), [`uplift/INTERVIEW.md`](uplift/INTERVIEW.md)
+면접 대비 질문과 답: [`INTERVIEW.md`](INTERVIEW.md), [`abtest/INTERVIEW.md`](abtest/INTERVIEW.md), [`uplift/INTERVIEW.md`](uplift/INTERVIEW.md), [`ctr/INTERVIEW.md`](ctr/INTERVIEW.md)
 
 ## 핵심 결과
 

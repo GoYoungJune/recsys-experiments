@@ -1,0 +1,85 @@
+[21:36:04] Data: {'train': {'rows': 592977, 'pos_rate': 0.780839741230011, 'cold_row_share': 0.0, 'start': '2000-04-25T23:05:32', 'end': '2000-12-02T14:52:18'}, 'valid': {'rows': 74209, 'pos_rate': 0.7790025472640991, 'cold_row_share': 0.7698796641916749, 'start': '2000-12-02T14:52:18', 'end': '2000-12-29T23:42:47'}, 'test': {'rows': 71826, 'pos_rate': 0.7581098675727844, 'cold_row_share': 0.1941775958566536, 'start': '2000-12-29T23:43:34', 'end': '2003-02-28T17:49:50'}}
+[21:36:06] 1) Train four models (fixed hyper-parameters, early stopping on valid logloss)
+[21:36:06]    LR
+[21:36:09]       epoch  1 valid logloss 0.5310
+[21:36:10]       epoch  2 valid logloss 0.4983
+[21:36:10]       epoch  3 valid logloss 0.4825
+[21:36:11]       epoch  4 valid logloss 0.4706
+[21:36:12]       epoch  5 valid logloss 0.4609
+[21:36:13]       epoch  6 valid logloss 0.4529
+[21:36:13]       epoch  7 valid logloss 0.4464
+[21:36:14]       epoch  8 valid logloss 0.4407
+[21:36:15]       epoch  9 valid logloss 0.4358
+[21:36:15]       epoch 10 valid logloss 0.4315
+[21:36:16]       epoch 11 valid logloss 0.4279
+[21:36:17]       epoch 12 valid logloss 0.4247
+[21:36:18]       epoch 13 valid logloss 0.4219
+[21:36:18]       epoch 14 valid logloss 0.4194
+[21:36:19]       epoch 15 valid logloss 0.4172
+[21:36:20]       epoch 16 valid logloss 0.4151
+[21:36:21]       epoch 17 valid logloss 0.4134
+[21:36:21]       epoch 18 valid logloss 0.4118
+[21:36:22]       epoch 19 valid logloss 0.4104
+[21:36:23]       epoch 20 valid logloss 0.4091
+[21:36:24]       epoch 21 valid logloss 0.4081
+[21:36:24]       epoch 22 valid logloss 0.4070
+[21:36:25]       epoch 23 valid logloss 0.4061
+[21:36:26]       epoch 24 valid logloss 0.4053
+[21:36:26]       epoch 25 valid logloss 0.4045
+[21:36:27]       epoch 26 valid logloss 0.4040
+[21:36:28]       epoch 27 valid logloss 0.4033
+[21:36:29]       epoch 28 valid logloss 0.4028
+[21:36:29]       epoch 29 valid logloss 0.4023
+[21:36:30]       epoch 30 valid logloss 0.4019
+[21:36:30]    FM
+[21:36:31]       epoch  1 valid logloss 0.4408
+[21:36:33]       epoch  2 valid logloss 0.4124
+[21:36:34]       epoch  3 valid logloss 0.4025
+[21:36:35]       epoch  4 valid logloss 0.3987
+[21:36:37]       epoch  5 valid logloss 0.3977
+[21:36:38]       epoch  6 valid logloss 0.3970
+[21:36:39]       epoch  7 valid logloss 0.3973
+[21:36:41]       epoch  8 valid logloss 0.3962
+[21:36:42]       epoch  9 valid logloss 0.3959
+[21:36:43]       epoch 10 valid logloss 0.3953
+[21:36:44]       epoch 11 valid logloss 0.3955
+[21:36:46]       epoch 12 valid logloss 0.3953
+[21:36:47]       epoch 13 valid logloss 0.3942
+[21:36:48]       epoch 14 valid logloss 0.3943
+[21:36:50]       epoch 15 valid logloss 0.3939
+[21:36:51]       epoch 16 valid logloss 0.3939
+[21:36:52]       epoch 17 valid logloss 0.3935
+[21:36:54]       epoch 18 valid logloss 0.3936
+[21:36:55]       epoch 19 valid logloss 0.3938
+[21:36:55]    DeepFM
+[21:37:00]       epoch  1 valid logloss 0.4026
+[21:37:06]       epoch  2 valid logloss 0.4020
+[21:37:11]       epoch  3 valid logloss 0.4025
+[21:37:16]       epoch  4 valid logloss 0.4011
+[21:37:22]       epoch  5 valid logloss 0.4012
+[21:37:27]       epoch  6 valid logloss 0.4019
+[21:37:27]    DCN-v2
+[21:37:33]       epoch  1 valid logloss 0.4105
+[21:37:39]       epoch  2 valid logloss 0.4126
+[21:37:45]       epoch  3 valid logloss 0.4117
+[21:37:45]    best deep model by valid logloss: DeepFM
+[21:37:45]    Platt on valid: a=0.866 b=0.407
+[21:37:45]    Platt on valid returning users only (post-hoc): a=0.942 b=-0.018
+[21:37:45] 2) Exploratory: best deep model without ID fields
+[21:37:52]       epoch  1 valid logloss 0.4993
+[21:37:57]       epoch  2 valid logloss 0.4989
+[21:38:02]       epoch  3 valid logloss 0.4954
+[21:38:07]       epoch  4 valid logloss 0.4964
+[21:38:13]       epoch  5 valid logloss 0.4948
+[21:38:18]       epoch  6 valid logloss 0.4924
+[21:38:23]       epoch  7 valid logloss 0.4894
+[21:38:28]       epoch  8 valid logloss 0.4892
+[21:38:33]       epoch  9 valid logloss 0.4941
+[21:38:38]       epoch 10 valid logloss 0.4930
+[21:38:38] 3) User-cluster bootstrap on test (1000 resamples)
+[21:38:54]    C1 FM-LR AUC: +0.0042 [-0.0005, +0.0090]
+[21:38:54]    C2 deep-FM AUC: -0.0030 [-0.0063, +0.0001]
+[21:38:54]    C3 ECE platt-raw: +0.0272 [+0.0138, +0.0312]
+[21:38:54]    C4 AUC cold-warm: -0.0404 [-0.0703, -0.0098]
+[21:38:54] 4) Writing results
+[21:38:54] Done in 174s
