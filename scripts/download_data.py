@@ -21,7 +21,8 @@ DATA = Path(__file__).resolve().parents[1] / "data"
 DATASETS = {
     "ml-latest-small": ("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip",
                         ("ratings.csv", "movies.csv"), DATA / "raw"),
-    "ml-1m": ("https://files.grouplens.org/datasets/movielens/ml-1m.zip", ("ratings.dat", "movies.dat"), DATA / "ml-1m"),
+    "ml-1m": ("https://files.grouplens.org/datasets/movielens/ml-1m.zip", ("ratings.dat", "movies.dat", "users.dat"),
+              DATA / "ml-1m"),
 }
 # Amazon Shopping Queries Dataset (Apache-2.0), Git LFS files; checksums from the LFS pointers in the repo
 ESCI_URL = "https://media.githubusercontent.com/media/amazon-science/esci-data/main/shopping_queries_dataset/"
