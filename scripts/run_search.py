@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import gc
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -25,7 +24,6 @@ from tabulate import tabulate
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-os.environ.setdefault("HF_HUB_OFFLINE", "1")  # every model is already in the local cache
 
 from recsys.search.data import groups, load_examples, load_product_text, sample_queries  # noqa: E402
 from recsys.search.metrics import ndcg_at_k, rrf  # noqa: E402

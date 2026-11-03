@@ -74,6 +74,7 @@ PyTorch 임베딩의 기본 초기화는 N(0, 1)인데, 원 논문처럼 임베�
 ## 실행
 
 ```bash
+python -m pip install -e ".[dev,serving]"
 python scripts/download_data.py ml-1m
 python scripts/run_experiments.py --dataset ml-1m   # GPU 약 25분 → results/ml-1m/
 python scripts/benchmark_serving.py                 # 약 5분 → results/ml-1m/serving/
