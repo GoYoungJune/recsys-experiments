@@ -25,6 +25,8 @@ dev = ["pytest"]
 serving = ["onnx", "onnxruntime", "fastapi<0.162", "uvicorn", "httpx"]
 # search reranking: models are pulled from the Hugging Face Hub on first run (about 10 GB)
 search = ["pyarrow", "scikit-learn", "sentence-transformers", "transformers"]
+# part 4: uplift models on the Hillstrom e-mail experiment
+uplift = ["scikit-learn"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

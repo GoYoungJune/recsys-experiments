@@ -1,0 +1,20 @@
+[21:03:06] 0) Quality checks: SRM and covariate balance
+[21:03:06]    counts [21306, 21307, 21387] chi2=0.203 p=0.904; max |SMD| = 0.0137
+[21:03:06] 1) U1: average effects (full data)
+[21:03:06]    visit Mens-Control +0.0766 [+0.0700, +0.0832] p_holm=<0.001
+[21:03:06]    visit Womens-Control +0.0452 [+0.0389, +0.0516] p_holm=<0.001
+[21:03:06] 2) U2: matching interactions (full data)
+[21:03:06]    Mens: diff of effects +0.0110 [-0.0023, +0.0242] p_holm=0.104
+[21:03:06]    Womens: diff of effects +0.0620 [+0.0495, +0.0746] p_holm=<0.001
+[21:03:06] 3) Uplift model: split, CV selection on train, fit, predict test
+[21:03:06]    CV LogisticRegression: out-of-fold policy value 0.1862
+[21:03:09]    CV HistGradientBoosting: out-of-fold policy value 0.1803
+[21:03:09]    chosen: LogisticRegression
+[21:03:09]    single best e-mail on train: Mens
+[21:03:09] 4) Bootstrap policy values on test (10,000 paired resamples)
+[21:03:12]    U3 model-single -0.0027 [-0.0083, +0.0029]
+[21:03:12]    U4 ratio 0.514 [0.437, 0.594]
+[21:03:12] 5) Exploratory: model vs single on conversion and spend (test)
+[21:03:17] 6) Post-hoc cause analysis (full data, not pre-registered)
+[21:03:17] 7) Writing results
+[21:03:17] Done in 11s
